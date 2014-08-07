@@ -1,6 +1,6 @@
 ##描述##
 
-从已排序数组中找出其中所含相同元素的最长序列
+从非递减排序数组中找出所含相同元素的最长序列
 
 ##示例##
 
@@ -14,7 +14,7 @@
 
 ##代码##
 
-        def test(lst):
+        def longest_same_item_in_sorted_list(lst):
             lst = sorted(lst)  # make sure lst is sorted
             longest = 0
             last = 0
