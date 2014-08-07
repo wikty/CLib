@@ -23,3 +23,7 @@
                     longest += 1
                     last = i
             return (last-longest+1, longest)
+
+##效率##
+
+&theta;(n)
