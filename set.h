@@ -17,7 +17,7 @@ extern int set_is_member(const Set *st, const void *data);
  *			-1 => error occur
  */
 extern int set_insert(Set *st, const void *data);
-extern int set_remove(Set *st, void **data);
+extern int set_remove(Set *st, const void *data);
 extern int set_union(Set *st, const Set *st1, const Set *st2);
 extern int set_intersection(Set *st, const Set *st1, const Set *st2);
 extern int set_difference(Set *st, const Set *st1, const Set *st2);

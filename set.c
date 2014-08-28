@@ -12,12 +12,13 @@ int set_insert(Set *st, const void *data){
 	return list_push(st, data);
 }
 
-int set_remove(Set *st, void **data){
-	Node *pNode = list_search_node(st, data);
+int set_remove(Set *st, const void *data){
+	Node *pNode = list_search(st, data);
 	if(pNode==NULL){
 		return -1;
 	}
-	return list_remove(st, pNode, data);
+	Node *p;
+	return list_remove(st, pNode, &p);
 }
 
 int set_union(Set *st, const Set *st1, const Set *st2){
