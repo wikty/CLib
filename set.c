@@ -1,7 +1,19 @@
+#include <stdlib.h>
+
 #include "set.h"
 
+int set_init(Set *st,
+			void (*destroy)(void *data), 
+			int (*match)(const void *data, const void *item)){
+	if(match == NULL){
+		return -1;
+	}
+	list_init(st, destroy, match);
+	return 0;
+}
+
 int set_is_member(const Set *st, const void *data){
-	Node *pNode = list_search_node(st, data);
+	Node *pNode = list_search(st, data);
 	return (pNode == NULL ? 0 : 1);
 }
 
@@ -13,12 +25,7 @@ int set_insert(Set *st, const void *data){
 }
 
 int set_remove(Set *st, const void *data){
-	Node *pNode = list_search(st, data);
-	if(pNode==NULL){
-		return -1;
-	}
-	Node *p;
-	return list_remove(st, pNode, &p);
+	return list_remove_by_data(st, data);
 }
 
 int set_union(Set *st, const Set *st1, const Set *st2){
@@ -26,9 +33,10 @@ int set_union(Set *st, const Set *st1, const Set *st2){
 
 	Node *pCurrentNode = list_head(st1);
 	while(pCurrentNode){
-		if(set_insert(st, list_node_data(pCurrentNode))!=0){
+		/* trust use's st1 is a really set(no duplicate node) */
+		if(list_push(st, list_node_data(pCurrentNode)) != 0){
 			set_destroy(st);
-			return -1;	
+			return -1;
 		}
 		pCurrentNode = list_node_next(pCurrentNode);
 	}
@@ -36,7 +44,7 @@ int set_union(Set *st, const Set *st1, const Set *st2){
 	pCurrentNode = list_head(st2);
 	while(pCurrentNode){
 		if(!set_is_member(st, list_node_data(pCurrentNode))){
-			if(set_insert(st, list_node_data(pCurrentNode))!=0){
+			if(list_push(st, list_node_data(pCurrentNode)) != 0){
 				set_destroy(st);
 				return -1;
 			}
@@ -98,4 +106,14 @@ int set_is_subset(const Set *st, const Set *st1){
 		pCurrentNode = list_node_next(pCurrentNode);
 	}
 	return 1;
+}
+
+int set_copy_to(const Set *st, Set *st1){
+	Node *pCurrentNode = list_head(st);
+	while(pCurrentNode){
+		if(list_push(st1, list_node_data(pCurrentNode)) != 0){
+			return -1;
+		}
+		pCurrentNode = list_node_next(pCurrentNode);
+	}
 }
