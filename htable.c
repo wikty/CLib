@@ -4,7 +4,7 @@
 int htable_init(HTable *htb,
 				unsigned int buckets,
 				int (*hash)(const void *key),
-				void (*destroy)(void *data)
+				void (*destroy)(void *data),
 				int (*match)(const void *key1, const void *key2)){
 	if(match==NULL || hash==NULL || buckets == 0){
 		return -1;
@@ -70,10 +70,17 @@ int htable_remove(HTable *htb, const void *data){
 
 int htable_has_data(HTable *htb, const void *data){
 	/* Don't trust User function htb->hash() can return suitable value */
-	int pos = htb->hash(data) % htb->bucket;
+	int pos = htb->hash(data) % htb->buckets;
 	List *pList = (List *)(htb->table+pos);
 	if(list_search(pList, data)!=NULL){
 		return 1;
 	}
 	return 0;
+}
+
+void htable_dump(HTable *htb, void (*print)(const void *data)){
+	for(int i=0; i<htb->buckets; i++){
+		List *pList = (List *)(htb->table+i);
+		list_dump(pList, print);
+	}
 }
