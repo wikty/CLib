@@ -1,8 +1,6 @@
 #ifndef OHTABLE_H_
 #define OHTABLE_H_
 
-#include <stdlib.h>
-
 typedef struct OHTable_{
 	/* hash table total length */
 	unsigned int positions;
@@ -38,11 +36,26 @@ extern int ohtable_init(OHTable *ohtb,
 
 extern void ohtable_destroy(OHTable *ohtb);
 
+/*
+ *  @return: 1 => existed
+ *			 0 => success
+ *			 -1 => table is filled, or hash function is not correctly
+ */
 extern int ohtable_insert(OHTable *ohtb, const void *data);
 
+/*
+ *  @return: -1 => data not in table
+ *			 0 => success
+ */
 extern int ohtable_remove(OHTable *ohtb, const void *data);
 
+/*
+ *  @return: 0 => not in table
+ *			 1 => in table
+ */
 extern int ohtable_has_data(OHTable *ohtb, const void *data);
+
+extern void ohtable_dump(OHTable *ohtb, void (*print)(const void *data));
 
 #define ohtable_len(ohtb) ((ohtb)->size)
 
