@@ -1,6 +1,8 @@
-#include"list.h"
+#include <stdlib.h>
 
-void list_init(List *lst, void (*destroy)(void *data), int (*match)(const void *data, const void *item)){
+#include "list.h"
+
+void list_init(List *lst, void (*destroy)(void *data), int (*match)(const void *data1, const void *data2)){
     lst->head = NULL;
     lst->tail = NULL;
     lst->length = 0;
@@ -15,6 +17,7 @@ void list_destroy(List *lst){
             lst->destroy(data);
         }
     }
+    
     memset(lst, 0, sizeof(*lst));
 }
 
@@ -49,6 +52,7 @@ int list_insert(List *lst, Node *pNode, const void *data){
     if(list_is_empty(lst) && pNode!=NULL){
         return -1;
     }
+    
     Node *pNewNode = NULL;
     if(pNode==NULL || list_is_head(lst, pNode)){
         /* insert before list head */
@@ -59,6 +63,7 @@ int list_insert(List *lst, Node *pNode, const void *data){
         pNewNode->next = list_head(lst);
 
         lst->head = pNewNode;
+
         if(list_is_empty(lst)){
             lst->tail = pNewNode;
         }
@@ -92,6 +97,7 @@ int list_append(List *lst, Node *pNode, const void *data){
     if(list_is_empty(lst) && pNode!=NULL){
         return -1;
     }
+
     Node *pNewNode = NULL;
     if(pNode==NULL || list_is_tail(lst, pNode)){
         /* append after list tail */
@@ -141,7 +147,6 @@ int list_remove(List *lst, Node *pNode, void **data){
         if(list_is_equal(pCurrentNode, pNode)){
             *data = list_node_data(pNode);
             if(list_is_head(lst, pNode)){
-                /* remove head node */
                 lst->head = list_node_next(lst->head);
             }
             if(list_is_tail(lst, pNode)){
@@ -152,7 +157,7 @@ int list_remove(List *lst, Node *pNode, void **data){
             }
             lst->length--;
             /* the responsibility of allocation node.data space is User,
-               but Node allocation is list programer
+               but Node allocation is list programer's responsibility
             */
             free(pNode);
             return 0;
@@ -160,11 +165,13 @@ int list_remove(List *lst, Node *pNode, void **data){
         pPrevNode = pCurrentNode;
         pCurrentNode = list_node_next(pCurrentNode);
     }
+    *data = NULL;
     return -1;
 }
 
 int list_remove_next(List *lst, Node *pNode, void **data){
-    if(list_len(lst)<2 || list_is_tail(lst, pNode)){
+    if(pNode == NULL || list_len(lst)<2 || list_is_tail(lst, pNode)){
+        *data = NULL;
         return -1;
     }
 
@@ -178,17 +185,49 @@ int list_remove_next(List *lst, Node *pNode, void **data){
     *data = list_node_data(pNextNode);
     pNode->next = list_node_next(pNextNode);
     lst->length--;
-    free(pNextNode);
 
-    if(list_is_tail(lst, pNode)){
+    if(list_is_tail(lst, pNextNode)){
         lst->tail = pNode;
         lst->tail->next = NULL;
     }
+    
+    free(pNextNode);
     return 0;
+}
+
+int list_remove_by_data(List *lst, const void *data){
+    if(lst->match==NULL || data == NULL){
+        return -1;
+    }
+    Node *pPrevNode = NULL;
+    Node *pCurrentNode = list_head(lst);
+    while(pCurrentNode){
+        if(lst->match(list_node_data(pCurrentNode), data)){
+            if(list_is_head(lst, pCurrentNode)){
+                lst->head = list_node_next(lst->head);
+            }
+            if(list_is_tail(lst, pCurrentNode)){
+                lst->tail = pPrevNode;
+            }
+            if(pPrevNode!=NULL){
+                pPrevNode->next = list_node_next(pCurrentNode);
+            }
+            lst->length--;
+            /* the responsibility of allocation node.data space is User,
+               but Node allocation is list programer's responsibility
+            */
+            free(pCurrentNode);
+            return 0;
+        }
+        pPrevNode = pCurrentNode;
+        pCurrentNode = list_node_next(pCurrentNode);
+    }
+    return 1;
 }
 
 int list_shift(List *lst, void **data){
     if(list_is_empty(lst)){
+        *data = NULL;
         return -1;
     }
     Node *pNode = list_head(lst);
@@ -205,6 +244,7 @@ int list_shift(List *lst, void **data){
 
 int list_pop(List *lst, void **data){
     if(list_is_empty(lst)){
+        *data = NULL;
         return -1;
     }
     Node *pNode = list_tail(lst);
@@ -215,20 +255,21 @@ int list_pop(List *lst, void **data){
         lst->head = lst->tail = NULL;
     }
     else{
-        pPrevNode->next = NULL;        
+        lst->tail = pPrevNode;
+        lst->tail->next = NULL;        
     }
     lst->length--;
     free(pNode);
     return 0;
 }
 
-Node* list_search(List *lst, const void *item){
+Node* list_search(List *lst, const void *data){
     if(lst->match==NULL){
         return NULL;
     }
     Node *pCurrentNode = list_head(lst);
     while(pCurrentNode){
-        if(lst->match(list_node_data(pCurrentNode), item)){
+        if(lst->match(list_node_data(pCurrentNode), data)){
             return pCurrentNode;
         }
         pCurrentNode = list_node_next(pCurrentNode);
@@ -249,4 +290,12 @@ Node* list_get(List *lst, unsigned int pos){
         pNode = list_node_next(pNode);
     }
     return pNode;
+}
+
+void list_dump(List *lst, void (*print)(const void *data)){
+    Node *pCurrentNode = list_head(lst);
+    while(pCurrentNode){
+        print(list_node_data(pCurrentNode));
+        pCurrentNode = list_node_next(pCurrentNode);
+    }
 }
