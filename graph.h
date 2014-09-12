@@ -38,24 +38,24 @@ extern int graph_add_vertex(Graph *gp, const void *vertex);
 extern int graph_add_edge(Graph *gp, const void *from, const void *to);
 
 /*
- *  @function: remove vertex and all of adjacent record
+ *  @function: remove vertex and all of adjacent record in other vertex
  */
 extern int graph_drop_vertex(Graph *gp, const void *vertex);
 
 /*
  *  @function: remove vertex, if other adjacent with this vertex
- *			   call fail
+ *			   calling failure
  */
 extern int graph_remove_vertex(Graph *gp, const void *vertex);
 
 extern int graph_remove_edge(Graph *gp, const void *from, const void *to);
 
 /*
- *  @function: get vertex's adjlist
- *  @param: adjlist => be set point to the vertex's adjlist
- *			so the User should make sure don't modify the adjlist
+ *  @function: get vertex's adjlist::adjacent
+ *  @param: adjacent => User should initialize(memory allocate) it
+ *			after return, will hold the copy of vertex's adjlist::adjacent
  */
-extern int graph_get_adjlist(Graph *gp, const void *vertex, AdjList **adjlist);
+extern int graph_get_adjacent(Graph *gp, const void *vertex, Set *adjacent);
 
 /*
  *  @function: is there a edge between vertex1 and vertex2
@@ -65,6 +65,8 @@ extern int graph_get_adjlist(Graph *gp, const void *vertex, AdjList **adjlist);
  *			 2 => vertex1 <=> vertex2
  */
 extern int graph_is_adjacent(Graph *gp, const void *vertex1, const void *vertex2);
+
+extern void graph_dump(Graph *gp, void (*print)(const void *data));
 
 #define graph_vcount(gp)	((gp)->vcount);
 #define graph_ecount(gp)	((gp)->ecount);

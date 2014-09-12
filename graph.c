@@ -4,66 +4,73 @@
 #include "set.h"
 #include "graph.h"
 
+/* 
+ *	@param: adjacent
+ *			after return, adjacent will be pointed directly to vertex's adjlist::adjacent
+ */
+static int get_adjacent(Graph *gp, const void *vertex, Set **adjacent);
+static int get_adjlist(Graph *gp, const void *vertex, AdjList **adjlist);
+static int adjlist_match(const void *data1, const void *data2);
+
 void graph_init(Graph *gp, void (*destroy)(void *data), int (*match)(const void *data1, const void *data2)){
 	gp->ecount = 0;
 	gp->vcount = 0;
 	gp->destroy = destroy;
 	gp->match = match;
 
-	list_init(&(gp->adjtable), NULL, NULL);
+	list_init(&(gp->adjtable), NULL, adjlist_match);
 }
 
-void graph_init(Graph *gp){
+void graph_destroy(Graph *gp){
 	AdjList *adjlist = NULL;
 	
-	while(list_len(gp->adjtable) > 0){
+	while(list_len(&(gp->adjtable)) > 0){
 		if(list_pop(&(gp->adjtable), (void **)&adjlist) == 0){
-			/* Set destroy itself, actually just memset empty */
+			/* Destroy Set's item, actually just memset Set, and
+				Set is a auto variable
+			 */
 			set_destroy(&(adjlist->adjacent));
 
 			if(gp->destroy != NULL){
 				gp->destroy(adjlist->vertex);
 			}
 			
+			/* The responsibility of Manage adjlist by Library Author */
 			free(adjlist);
 		}
 	}
-	/* actually just memset empty */
+	/* actually just memset ajatable(is a auto variable) */
 	list_destroy(&(gp->adjtable));
 
 	memset(gp, 0, sizeof(*gp));
 }
 
-int graph_get_adjlist(Grap *gp, const void *vertex, AdjList **adlist){
-	if(graph_is_empty(gp)){
-		*adlist = NULL;
-		return -1;
+int graph_get_adjacent(Graph *gp, const void *vertex, Set *adjacent){
+	int retval;
+	Set *temp = NULL;
+	if((retval = get_adjacent(gp, vertex, &temp)) != 0){
+		return retval;
 	}
-	
-	*adlist = list_head(&(gp->adjtable));
-	while(*adlist != NULL){
-		if(gp->match(((AdjList *)(*adlist))->vertex, vertex)){
-			return 0;
-		}
-		*adlist = list_node_next(*adlist);
+	if((retval = set_copy_to(temp, adjacent)) != 0){
+		return retval;
 	}
-	
-	*adlist = NULL;
-	return -1;
+	return 0;
 }
 
 int graph_is_adjacent(Graph *gp, const void *vertex1, const void *vertex2){
-	AdjList *adjlist1, *adjlist2;
-	graph_get_adjlist(gp, vertex1, &adjlist1);
-	if(adjlist1 == NULL){
+	/* if vertex1 or vertex2 is not existed */
+	Set *adjacent1, *adjacent2;
+	get_adjacent(gp, vertex1, &adjacent1);
+	if(adjacent1 == NULL){
 		return 0;
 	}
-	graph_get_adjlist(gp, vertex2, &adjlist2);
-	if(adjlist2 == NULL){
+	get_adjacent(gp, vertex2, &adjacent2);
+	if(adjacent2 == NULL){
 		return 0;
 	}
-	int v1has2 = set_is_member(adjlist1, vertex2);
-	int v2has1 = set_is_member(adjlist2, vertex1);
+
+	int v1has2 = set_is_member(adjacent1, vertex2);
+	int v2has1 = set_is_member(adjacent2, vertex1);
 	if(v1has2 && v2has1){
 		return 2;
 	}
@@ -80,16 +87,15 @@ int graph_is_adjacent(Graph *gp, const void *vertex1, const void *vertex2){
 
 int graph_add_vertex(Graph *gp, const void *vertex){
 	AdjList *adjlist = NULL;
-	graph_get_adjlist(gp, vertex, &adjlist);
+	get_adjlist(gp, vertex, &adjlist);
 	if(adjlist != NULL){
-		/* vertex existed, dont allow insertion duplicate vertices */
+		/* vertex existed, don't allow insertion duplicate vertices */
 		return 1;
 	}
 
 	if((adjlist = (AdjList *)malloc(sizeof(AdjList))) == NULL){
 		return -1;
 	}
-
 	adjlist->vertex = (void *)vertex;
 	set_init(&(adjlist->adjacent), NULL, gp->match);
 
@@ -103,23 +109,22 @@ int graph_add_vertex(Graph *gp, const void *vertex){
 }
 
 int graph_add_edge(Graph *gp, const void *from, const void *to){
-	AdjList *adjlist = NULL;
-
+	Set *adjacent = NULL;
 	/* if vertices not in graph, dont allow insertion */
-	graph_get_adjlist(gp, to, &adjlist);
-	if(adjlist == NULL){
+	get_adjacent(gp, to, &adjacent);
+	if(adjacent == NULL){
 		return -1;
 	}
-	/* NOTICE: from test must be after to test, 
-	   so adjlist store from list pointer 
-	*/
-	graph_get_adjlist(gp, from, &adjlist);
-	if(adlist == NULL){
+	adjacent = NULL;
+	get_adjacent(gp, from, &adjacent);
+	/* NOW: adjacent is owned by [from] */
+	if(adjacent == NULL){
 		return -1;
 	}
 	
 	int retval;
-	if((retval = set_insert(adjlist->adjacent, to)) != 0){
+	if((retval = set_insert(adjacent, to)) != 0){
+		/* existed, will return 1 */
 		return retval;
 	}
 
@@ -129,23 +134,29 @@ int graph_add_edge(Graph *gp, const void *from, const void *to){
 
 int graph_drop_vertex(Graph *gp, const void *vertex){
 	AdjList *adjlist = NULL;
-	graph_get_adjlist(gp, vertex, &adjlist);
-
+	get_adjlist(gp, vertex, &adjlist);
 	if(adjlist == NULL){
-		return -1;
+		/* vertext is not existed */
+		return 1;
 	}
 
 	/* remove all adjacent */
-	AdjList *p = (AdjList *)list_head(&(gp->adjtable));
-	while(p != NULL){
-		set_remove(((AdjList *)p)->adjacent, vertex);
-		p = list_node_next(p);
+	AdjList *temp = NULL;
+	Node *pNode = list_head(&(gp->adjtable));
+	while(pNode != NULL){
+		temp = (AdjList *)list_node_data(pNode);
+		pNode = list_node_next(pNode);
+		if(temp == adjlist){
+			continue;
+		}
+		set_remove(&(temp->adjacent), vertex);
 	}
 	/* remove adjlist */
 	if(gp->destroy != NULL){
 		gp->destroy(adjlist->vertex);
 	}
 	set_destroy(&(adjlist->adjacent));
+	list_remove_by_data(&(gp->adjtable), adjlist);
 	free(adjlist);
 
 	gp->vcount--;
@@ -154,25 +165,31 @@ int graph_drop_vertex(Graph *gp, const void *vertex){
 
 int graph_remove_vertex(Graph *gp, const void *vertex){
 	AdjList *adjlist = NULL;
-	graph_get_adjlist(gp, vertex, &adjlist);
-
+	get_adjlist(gp, vertex, &adjlist);
 	if(adjlist == NULL){
-		return -1;
+		/* vertext is not existed */
+		return 1;
 	}
 
-	AdjList *p = (AdjList *)list_head(&(gp->adjtable));
-	while(p != NULL){
-		/* dont allow removal of the vertex if it is in an adjacent list */
-		if(set_is_member(((AdjList *)p)->adjacent, vertex)){
+	AdjList *temp = NULL;
+	Node *pNode = list_head(&(gp->adjtable));
+	while(pNode != NULL){
+		temp = (AdjList *)list_node_data(pNode);
+		pNode = list_node_next(pNode);
+		if(temp == adjlist){
+			continue;
+		}
+		if(set_is_member(&(temp->adjacent), vertex)){
+			/* other verteics adjacent the vertex, so cannot remove it */
 			return -1;
 		}
-		p = list_node_next(p);
 	}
 	/* remove adjlist */
 	if(gp->destroy != NULL){
 		gp->destroy(adjlist->vertex);
 	}
 	set_destroy(&(adjlist->adjacent));
+	list_remove_by_data(&(gp->adjtable), adjlist);
 	free(adjlist);
 
 	gp->vcount--;
@@ -180,23 +197,24 @@ int graph_remove_vertex(Graph *gp, const void *vertex){
 }
 
 int graph_remove_edge(Graph *gp, const void *from, const void *to){
-	AdjList *adjlist = NULL;
+	Set *adjacent = NULL;
 
 	/* if vertices not in graph, dont allow insertion */
-	graph_get_adjlist(gp, to, &adjlist);
-	if(adjlist == NULL){
+	get_adjacent(gp, to, &adjacent);
+	if(adjacent == NULL){
 		return -1;
 	}
 	/* NOTICE: from test must be after to test, 
 	   so adjlist store from list pointer 
 	*/
-	graph_get_adjlist(gp, from, &adjlist);
-	if(adlist == NULL){
+	get_adjacent(gp, from, &adjacent);  /* adjacent is from's adjacent */
+	if(adjacent == NULL){
 		return -1;
 	}
 
 	int retval;
-	if((retval = set_remove(adjlist->adjacent, to)) != 0){
+	if((retval = set_remove(adjacent, to)) != 0){
+		/* if not in, return 1 */
 		return retval;
 	}
 
@@ -204,3 +222,60 @@ int graph_remove_edge(Graph *gp, const void *from, const void *to){
 	return 0;
 }
 
+void graph_dump(Graph *gp, void (*print)(const void *data)){
+	AdjList *adjlist = NULL;
+	Set *adjacent = NULL;
+	Node *pNode = list_head(&(gp->adjtable));
+	while(pNode != NULL){
+		adjlist = (AdjList *)list_node_data(pNode);
+		print(adjlist->vertex);
+		printf(": ");
+		get_adjacent(gp, adjlist->vertex, &adjacent);
+		set_dump(adjacent, print);
+		printf("\n");
+		pNode = list_node_next(pNode);
+	}
+}
+
+/* 
+ *	Internel Functions
+ */
+
+int get_adjlist(Graph *gp, const void *vertex, AdjList **adjlist){
+	if(graph_is_empty(gp)){
+		*adjlist = NULL;
+		return -1;
+	}
+	AdjList *temp = NULL;
+	
+	Node *pNode = list_head(&(gp->adjtable));
+	while(pNode != NULL){
+		temp = (AdjList *)list_node_data(pNode);
+		if(gp->match(temp->vertex, vertex)){
+			*adjlist = temp;
+			return 0;
+		}
+		pNode = list_node_next(pNode);
+	}
+	
+	*adjlist = NULL;
+	return -1;
+}
+
+int get_adjacent(Graph *gp, const void *vertex, Set **adjacent){
+	AdjList *adjlist = NULL;
+	int retval;
+	if((retval = get_adjlist(gp, vertex, &adjlist)) == 0){
+		*adjacent = &(adjlist->adjacent);
+	}
+	else{
+		return retval;
+	}
+}
+
+int adjlist_match(const void *data1, const void *data2){
+	if(((AdjList *)data1)->vertex == ((AdjList *)data2)->vertex){
+		return 1;
+	}
+	return 0;
+}
