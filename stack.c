@@ -1,4 +1,4 @@
-#include"stack.h"
+#include "stack.h"
 
 int stack_push(Stack *stk, const void *data){
 	return list_push(stk, data);
