@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "bitree.h"
 
 void bitree_init(BiTree *bt, 
@@ -27,6 +29,7 @@ int bitree_add_left(BiTree *bt, BiTreeNode *pNode, const void *data){
 		ppNode = (BiTreeNode **)&(bt->root);
 	}
 	else{
+		/* if node had a left child, canot add new left node */
 		if(pNode->left != NULL){
 			return -1;
 		}
@@ -36,14 +39,13 @@ int bitree_add_left(BiTree *bt, BiTreeNode *pNode, const void *data){
 	if((pNewNode = (BiTreeNode *)malloc(sizeof(BiTreeNode))) == NULL){
 		return -1;
 	}
-	pNewNode->data = data;
+	pNewNode->data = (void *)data;
 	pNewNode->left = NULL;
 	pNewNode->right = NULL;
 
 	*ppNode = pNewNode;
 
 	bt->size++;
-
 	return 0;
 }
 
@@ -66,14 +68,13 @@ int bitree_add_right(BiTree *bt, BiTreeNode *pNode, const void *data){
 	if((pNewNode = (BiTreeNode *)malloc(sizeof(BiTreeNode))) == NULL){
 		return -1;
 	}
-	pNewNode->data = data;
+	pNewNode->data = (void *)data;
 	pNewNode->left = NULL;
 	pNewNode->right = NULL;
 
 	*ppNode = pNewNode;
 
 	bt->size++;
-
 	return 0;
 }
 
@@ -81,6 +82,7 @@ int bitree_remove_left(BiTree *bt, BiTreeNode *pNode){
 	if(bitree_is_empty(bt)){
 		return -1;
 	}
+	
 	BiTreeNode **ppNode;
 	if(pNode == NULL){
 		/* remove the whole of tree */
@@ -89,21 +91,18 @@ int bitree_remove_left(BiTree *bt, BiTreeNode *pNode){
 	else{
 		/* remove pNode->left */
 		if(pNode->left == NULL){
-			/* left don't exist */
-			return 0;
+			/* left existed */
+			return 1;
 		}
 		ppNode = (BiTreeNode **)&(pNode->left);
 	}
 
-	if(bitree_remove_left(bt, *ppNode) != 0){
-		return -1;
-	}
-	if(bitree_remove_right(bt, *ppNode) != 0){
-		return -1;
-	}
-
-	if(bt->destroy != NULL){
-		bt->destroy((*ppNode)->date);
+	if(*ppNode != NULL){
+		bitree_remove_left(bt, *ppNode);
+		bitree_remove_right(bt, *ppNode);
+		if(bt->destroy != NULL){
+			bt->destroy((*ppNode)->data);
+		}
 	}
 
 	free(*ppNode);
@@ -131,15 +130,12 @@ int bitree_remove_right(BiTree *bt, BiTreeNode *pNode){
 		ppNode = (BiTreeNode **)&(pNode->right);
 	}
 
-	if(bitree_remove_left(bt, *ppNode) != 0){
-		return -1;
-	}
-	if(bitree_remove_right(bt, *ppNode) != 0){
-		return -1;
-	}
-
-	if(bt->destroy != NULL){
-		bt->destroy((*ppNode)->date);
+	if(*ppNode != NULL){
+		bitree_remove_left(bt, *ppNode);
+		bitree_remove_right(bt, *ppNode);
+		if(bt->destroy != NULL){
+			bt->destroy((*ppNode)->data);
+		}	
 	}
 
 	free(*ppNode);
@@ -161,6 +157,7 @@ int bitree_merge(BiTree *bt, BiTree *left, BiTree *right, const void *data){
 	}
 	bt->root->left = left->root;
 	bt->root->right = right->root;
+	bt->size = bt->size + left->size + right->size;
 
 	left->root = NULL;
 	left->size = 0;
@@ -171,8 +168,6 @@ int bitree_merge(BiTree *bt, BiTree *left, BiTree *right, const void *data){
 	right->destroy = NULL;
 	right->compare = NULL;
 
-
-	bt->size = bt->size + left->size + right->size;
 	return 0;
 }
 
@@ -235,7 +230,7 @@ int bitree_postorder(const BiTreeNode *pNode, List *lst){
 		}
 	}
 	if(pNode->right != NULL){
-		if(bitree_postorder(pNode->right, lst) != ){
+		if(bitree_postorder(pNode->right, lst) != 0){
 			return -1;
 		}
 	}
@@ -262,3 +257,82 @@ int bitree_search(BiTree *bt, const void *data, BiTreeNode** ppNode){
 	return 0;
 }
 */
+
+int bitree_map(const BiTreeNode *pNode, void* (*func)(const void *data), List *lst, int order){
+	if(pNode == NULL){
+		return 0;
+	}
+	void *d;
+	switch(order){
+		case 0:
+			/* preorder */
+			d = func(bitree_get_data(pNode));
+			if(lst != NULL && d != NULL){
+				if(list_push(lst, d) != 0){
+					return -1;
+				}
+			}
+			
+			if(pNode->left != NULL){
+				if(bitree_map(pNode->left, func, lst, order) != 0){
+					return -1;
+				}
+			}
+			
+			if(pNode->right != NULL){
+				if(bitree_map(pNode->right, func, lst, order) != 0){
+					return -1;
+				}
+			}
+			break;
+		case 1:
+			/* inorder */
+			if(pNode->left != NULL){
+				if(bitree_map(pNode->left, func, lst, order) != 0){
+					return -1;
+				}
+			}
+
+			d = func(bitree_get_data(pNode));
+			if(lst != NULL && d != NULL){
+				if(list_push(lst, d) != 0){
+					return -1;
+				}
+			}
+			
+			if(pNode->right != NULL){
+				if(bitree_map(pNode->right, func, lst, order) != 0){
+					return -1;
+				}
+			}
+			break;
+		case 2:
+			/* postorder */
+			if(pNode->left != NULL){
+				if(bitree_map(pNode->left, func, lst, order) != 0){
+					return -1;
+				}
+			}
+			
+			if(pNode->right != NULL){
+				if(bitree_map(pNode->right, func, lst, order) != 0){
+					return -1;
+				}
+			}
+
+			d = func(bitree_get_data(pNode));
+			if(lst != NULL && d != NULL){
+				if(list_push(lst, d) != 0){
+					return -1;
+				}
+			}
+			break;
+		default:
+			return -1;
+	}
+	return 0;
+}
+
+int bitree_dump(const BiTree *bt, void* (*print)(const void *data)){
+	return bitree_map(bitree_root(bt), print, NULL, 1);
+}
