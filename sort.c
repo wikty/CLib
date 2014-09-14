@@ -2,97 +2,208 @@
 
 #include <stdlib.h>
 
-static int partition(void *data,
+static void merge(void *data1,
+				void *data2,
+				unsigned int n1,
+				unsigned int n2,
+				unsigned int size,
+				void *rtn,
+				int (*compare)(const void *key1, const void *key2));
+
+ static int partition(void *data,
 					 unsigned int size,
 					 unsigned int start,
 					 unsigned int end,
-					 int (*compare)(const void *data1, const void *data2)){
-	char *p = (char *)data;
-	char *base, *swap;
-	if((base = (char *)malloc(sizeof(size))) == NULL){
-		return -1;
-	}
-	if((swap = (char *)malloc(sizeof(size))) == NULL){
-		free(base);
+					 int (*compare)(const void *data1, const void *data2));
+
+int busort(void *data,
+			unsigned int size,
+			unsigned int n,
+			int (*compare)(const void *data1, const void *data2)){
+	if(size < 1 || n < 1 || data == NULL || compare == NULL){
 		return -1;
 	}
 
-	/* pick a position */
-	int a[3], temp;
-	a[0] = (rand() % (end-start)) + start;
-	a[1] = (rand() % (end-start)) + start;
-	a[2] = (rand() % (end-start)) + start;
-	for(int i=1; i<3; i++){
-		temp = a[i];
+	char *p = (char *)data;
+	char *temp = NULL;
+	if((temp = (char *)malloc(size) == NULL){
+		return -1;
+	}
+
+	for(int i=n-2; i>=0; i--){
+		/* [i+1,,,n-1] had been sorted */
+		for(int j=0; j<=i; j++){
+			if(compare(&(data[j*size], &(data[(j+1)*size]))) > 0){
+				memcpy(temp, &(data[j*size]), size);
+				memcpy(&(data[j*size]), &(data[(j+1)*size]), size);
+				memcpy(&(data[(j+1)*size]), temp, size);
+			}
+		}
+	}
+
+	free(temp);
+	return 0;
+}
+
+int cosort(void *data,
+			unsigned int size,
+			unsigned int n,
+			int (*compare)(const void *data1, const void *data2)){
+	if(size < 1 || n < 1 || data == NULL || compare == NULL){
+		return -1;
+	}
+
+	char *p = (char *)data;
+	char *temp = NULL;
+	if((temp = (char *)malloc(size) == NULL){
+		return -1;
+	}
+
+	int left = 0;
+	int right = n-1;
+	int swapped = 1;
+
+	while(swapped){
+		swapped = 0;
+
+		/* scan [left, right-1] to bubble the max to [right] */
+		for(int i=left; i<right; i++){
+			if(compare(&(data[i*size]), &(data[(i+1)*size])) > 0){
+				memcpy(temp, &(data[i*size]), size);
+				memcpy(&(data[i*size]), &(data[(i+1)*size]), size);
+				memcpy(&(data[(i+1)*size]), temp, size);
+				swapped = 1;
+			}
+		}
+		right--;
+
+		/* scan [left-1, right] to bubble the min to [left] */
+		for(int j=right; j>left; j--){
+			if(compare(&(data[j*size]), &(data[(j-1)*size])) < 0){
+				memcpy(temp, &(data[j*size]), size);
+				memcpy(&(data[j*size]), &(data[(j-1)*size]), size);
+				memcpy(&(data[(j-1)*size]), temp, size);
+				swapped = 1;
+			}
+		}
+		left++;
+	}
+
+	free(temp);
+	return 0;
+}
+
+int slsort(void *data,
+		   unsigned int size,
+		   unsigned int n,
+		   int (*compare)(const void *data1, const void *data2)){
+	if(size < 1 || n < 1 || data == NULL || compare == NULL){
+		return -1;
+	}
+
+	char *p = (char *)data;
+	char *temp = NULL;
+	if((temp = (char *)malloc(size)) == NULL){
+		return -1;
+	}
+
+	for(int i=0; i<n-1; i++){
+
+		/* find the min in [i,,,n-1] */
+		int pos = i;
+		for(int j=i; j<n; j++){
+			if(compare(&(data[j*size]), &(data[i*size])) < 0){
+				pos = j;
+			}
+		}
+
+		if(pos != i){
+			memcpy(temp, &(data[pos*size]), size);
+			memcpy(&(data[pos*size]), &(data[i*size]), size);
+			memcpy(&(data[i*size]), temp, size);
+		}
+	}
+
+	free(temp);
+	return 0;
+}
+
+int slssort(void *data,
+		   unsigned int size,
+		   unsigned int n,
+		   int (*compare)(const void *data1, const void *data2)){
+	if(size < 1 || n < 1 || data == NULL || compare == NULL){
+		return -1;
+	}
+
+	char *p = (char *)data;
+	char *temp = NULL;
+	if((temp = (char *)malloc(size)) == NULL){
+		return -1;
+	}
+
+	for(int i=0; i<n-1; i++){
+
+		/* find the min in [i,,,n-1] */
+		int pos = i;
+		memcpy(temp, &(data[i*size]));
+		for(int j=i; j<n; j++){
+			if(compare(&(data[j*size]), temp) < 0){
+				memcpy(temp, &(data[j*size]), size);
+				pos = j;
+			}
+		}
+
+		if(pos != i){
+			int m = pos-1;
+			for(; m>i; m--){
+				if(compare(&(data[m*size]), &(data[i*size])) == 0){
+					memcpy(&(data[pos*size]), &(data[m*size]), size);
+					pos = m;
+				}
+			}
+			memcpy(&(data[pos*size]), &(data[i*size]), size);
+			memcpy(&(data[i*size]), temp, size);
+		}
+	}
+
+	free(temp);
+	return 0;
+}
+
+int issort(void *data,
+		   unsigned int size,
+		   unsigned int n,
+		   int (*compare)(const void *data1, const void *data2)){
+	if(size < 1 || n < 1 || data == NULL || compare == NULL){
+		return -1;
+	}
+
+	char *p = (char *)data;
+	char *temp = NULL;
+	if((temp = (char *)malloc(size)) == NULL){
+		return -1;
+	}
+
+	for(int i=1; i<n; i++){
+		memcpy(temp, &data[i*size], size);
+		/* [0,,,i-1] had been sorted */
 		int j=i-1;
-		for(; j>=0; j++){
-			if(a[j+1] < a[j]){
-				a[j+1] = a[j];
+		for(; j>=0; j--){
+			if(compare(temp, &data[j*size]) < 0){
+				memcpy(&data[(j+1)*size], &data[j*size], size);
 			}
 			else{
 				break;
 			}
 		}
-		a[j+1] = temp;
+		memcpy(&data[(j+1)*size], temp, size);
 	}
-	memcpy(base, &data[a[1]*size], size);
 
-	while(1){
-		while(compare(&data[start*size], base) < 0){
-			start++;
-		}
-
-		while(compare(&data[(end-1)*size], base) >= 0){
-			end--;
-		}
-
-		if(start >= end-1){
-			break;
-		}
-		else{
-			memcpy(swap, &data[start*size], size);
-			memcpy(&data[start*size], &data[(end-1)*size], size);
-			memcpy(&data[(end-1)*size], swap, size);
-		}
-	}
-	free(base);
-	free(swap);
-	return end-1;
+	free(temp);
+	return 0;
 }
 
-/* data1(lenth is n1) and data2(length is n2) is sorted array */
-static void merge(void *data1,
-				 void *data2,
-				 unsigned int n1,
-				 unsigned int n2,
-				 unsigned int size,
-				 void *rtn,
-				 int (*compare)(const void *key1, const void *key2)){
-	rtn = (char *)rtn;
-	char *p1 = (char *)data1;
-	char *p2 = (char *)data2;
-	int i=0, j=0, index=0;
-	while(i<n1 && j<n2){
-		int retval = compare(&p1[i*size], &p2[j*size]);
-		if(retval < 0){
-			memcpy(&rtn[index*size], &p1[i*size], size);
-			i++;
-		}
-		else{
-			memcpy(&rtn[index*size], &p2[i*size], size);
-			j++;
-		}
-		index++;
-	}
-
-	if(i<n1){
-		memcpy(&rtn[index*size], &p1[i*size], size*(n1-i));
-	}
-	else if(j<n2){
-		memcpy(&rtn[index*size], &p2[j*size], size*(n2-j));
-	}
-	return;
-}
 
 // to debug
 int ordinal(void *data,
@@ -125,38 +236,6 @@ int ordinal(void *data,
 	return 0;
 }
 
-int issort(void *data,
-		   unsigned int size,
-		   unsigned int n,
-		   int (*compare)(const void *data1, const void *data2)){
-	if(size < 1 || n < 1){
-		return -1;
-	}
-	char *p = (char *)data;
-	
-	char *temp = NULL;
-	if((temp = (char *)malloc(size)) == NULL){
-		return -1;
-	}
-
-	for(int i=1; i<n; i++){
-		memcpy(temp, &data[i*size], size);
-		/* from 0 to i-1 had sorted */
-		int j=i-1;
-		for(; j>=0; j--){
-			if(compare(temp, &data[j*size]) < 0){
-				memcpy(&data[(j+1)*size], &data[j*size], size);
-			}
-			else{
-				break;
-			}
-		}
-		memcpy(&data[(j+1)*size], temp, size);
-	}
-
-	free(temp);
-	return 0;
-}
 
 int qksort(void *data,
 		   unsigned int size,
@@ -327,4 +406,101 @@ int bisearch(const void *data,
 		}
 	}
 	return -1;
+}
+
+
+/*
+ * Internal Functions
+ */
+
+int partition(void *data,
+			unsigned int size,
+			unsigned int start,
+			unsigned int end,
+			int (*compare)(const void *data1, const void *data2)){
+	char *p = (char *)data;
+	char *base, *swap;
+	if((base = (char *)malloc(sizeof(size))) == NULL){
+		return -1;
+	}
+	if((swap = (char *)malloc(sizeof(size))) == NULL){
+		free(base);
+		return -1;
+	}
+
+	/* pick a position */
+	int a[3], temp;
+	a[0] = (rand() % (end-start)) + start;
+	a[1] = (rand() % (end-start)) + start;
+	a[2] = (rand() % (end-start)) + start;
+	for(int i=1; i<3; i++){
+		temp = a[i];
+		int j=i-1;
+		for(; j>=0; j++){
+			if(a[j+1] < a[j]){
+				a[j+1] = a[j];
+			}
+			else{
+				break;
+			}
+		}
+		a[j+1] = temp;
+	}
+	memcpy(base, &data[a[1]*size], size);
+
+	while(1){
+		while(compare(&data[start*size], base) < 0){
+			start++;
+		}
+
+		while(compare(&data[(end-1)*size], base) >= 0){
+			end--;
+		}
+
+		if(start >= end-1){
+			break;
+		}
+		else{
+			memcpy(swap, &data[start*size], size);
+			memcpy(&data[start*size], &data[(end-1)*size], size);
+			memcpy(&data[(end-1)*size], swap, size);
+		}
+	}
+	free(base);
+	free(swap);
+	return end-1;
+}
+
+/* data1(lenth is n1) and data2(length is n2) is sorted array */
+void merge(void *data1,
+			void *data2,
+			unsigned int n1,
+			unsigned int n2,
+			unsigned int size,
+			void *rtn,
+			int (*compare)(const void *key1, const void *key2)){
+	rtn = (char *)rtn;
+	char *p1 = (char *)data1;
+	char *p2 = (char *)data2;
+	int i=0, j=0, index=0;
+	while(i<n1 && j<n2){
+		int retval = compare(&p1[i*size], &p2[j*size]);
+		if(retval < 0){
+			memcpy(&rtn[index*size], &p1[i*size], size);
+			i++;
+		}
+		else{
+			memcpy(&rtn[index*size], &p2[i*size], size);
+			j++;
+		}
+		index++;
+	}
+
+	if(i<n1){
+		memcpy(&rtn[index*size], &p1[i*size], size*(n1-i));
+	}
+	else if(j<n2){
+		memcpy(&rtn[index*size], &p2[j*size], size*(n2-j));
+	}
+	return;
 }

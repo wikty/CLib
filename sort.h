@@ -2,22 +2,82 @@
 #define SORT_H_
 
 /*
- *  @param: data
- *		array to be sorted(in position)
+ *	@function
+ *		Name:				Bubble Sort
+ *		Stability:			true
+ *		Time-Performance:	O(n*n)
+ *		In-Position:		true
+ *		Comparision:		true
+ *		Description:		If the input is a sorted, O(n*n)
  *  @param: size
- *		the byte number of the element(in the array)
+ *		the byte number of the element
  *	@param: n
- *		the number of element, the array has
+ *		the number of element in the array
  *	@param: compare
- *		a function to a compare function, this function
- *		should return -1 if data1 < data2, return 0 if 
- *		data1 = data2, return 1 if data1 > data2
+ *		a compare function, return -1 if data1 < data2, 
+ *		return 0 if data1 = data2, return 1 if data1 > data2
+ */
+extern int busort(void *data,
+					unsigned int size,
+					unsigned int n,
+					int (*compare)(const void *data1, const void *data2));
+
+/*
+ *	@function
+ *		Name:				Cocktail Sort
+ *		Stability:			true
+ *		Comparision:		true
+ *		Time-Performance:	O(n*n)
+ *		In-Position:		true
+ *		Description:		The improved version of Bubble Sort, if the input is a sorted, O(n)
+ */
+extern int cosort(void *data,
+					unsigned int size,
+					unsigned int n,
+					int (*compare)(const void *data1, const void *data2));
+
+
+/*
+ *	@function
+ *		Name:				Selection Sort
+ *		Stability:			false
+ *		Comparision:		true
+ *		Time-Performance:	O(n*n)
+ *		In-Position:		true
+ */
+extern int slsort(void *data,
+					unsigned int size,
+					unsigned int n,
+					int (*compare)(const void *data1, const void *data2));
+
+/*
+ *	@function
+ *		Name:				Stability Selection Sort
+ *		Stability:			true
+ *		Comparision:		true
+ *		Time-Performance:	O(n*n)
+ *		In-Position:		true
+ *		Description:		the stability version selection sort
+ */
+extern int slssort(void *data,
+					unsigned int size,
+					unsigned int n,
+					int (*compare)(const void *data1, const void *data2));
+
+/*
+ *	@function 
+ *		Name: 				Insertion Sort
+ *		Stability: 			true
+ *		Comparision:		true
+ *		Time-Performance: 	O(n*n)
+ *		In-Position: 		true
  *		
  */
 extern int issort(void *data,
 					unsigned int size,
 					unsigned int n,
 					int (*compare)(const void *data1, const void *data2));
+
 
 /*
  *	@param: start, end
