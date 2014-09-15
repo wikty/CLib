@@ -8,6 +8,7 @@ static void partial_match_table(const char *str, int table[]);
 static void bm_char_table(const char *str, int table[]);
 static void bm_suffix_table(const char *str, int table[]);
 static void sd_char_table(const char *str, int table[]);
+static void hp_char_table(const char *str, int table[]);
 
 int prefix_str_match(const char *str, const char *pattern){
 	int str_len = 0;
@@ -221,6 +222,49 @@ int sd_str_match(const char *str, const char *pattern){
 	return -1;
 }
 
+int hp_str_match(const char *str, const char *pattern){
+	int str_len = 0;
+	int pattern_len = 0;
+	const char *p = str;
+	while(*p != '\0'){
+		p++;
+	}
+	/* If str's length is larger than pow(2, 31)-1, will error */
+	str_len = p - str;
+	p = pattern;
+	while(*p != '\0'){
+		p++;
+	}
+	pattern_len = p - pattern;
+
+	int *table = NULL;
+	if((table = (int *)malloc(sizeof(int) * ASCII_MAX_SIZE)) == NULL){
+		return -1;
+	}
+	hp_char_table(pattern, table);
+
+	int i,j;
+	i=j=pattern_len - 1;
+	while(i<str_len){
+		if(str[i] == pattern[j]){
+			i--;
+			j--;
+			if(j==-1){
+				free(table);
+				return i + 1;
+			}
+		}
+		else{
+			int pos = i + ((pattern_len-1) - j);
+			i = pos + pattern_len - table[str[pos]];
+			j = pattern_len - 1;
+		}
+	}
+
+	free(table);
+	return -1;
+}
+
 /*
  *	Internal Functions
  */
@@ -324,6 +368,25 @@ void sd_char_table(const char *str, int table[]){
 	for(i=0; i<str_len; i++){
 		table[str[i]] = -1 * i;
 	}
-
 }
 
+void hp_char_table(const char *str, int table[]){
+	int str_len = 0;
+	const char *p = str;
+	while(*p != '\0'){
+		p++;
+	}
+	/* If str's length is larger than pow(2, 31)-1, will error */
+	str_len = p - str;
+
+	int i=0;
+	for(; i<ASCII_MAX_SIZE; i++){
+		table[i] = 0;
+	}
+	/* later element will override */
+	for(i=0; i<str_len-1; i++){
+		/* NOTICE: dont calculate str[str_len-1] */
+		table[str[i]] = i + 1;
+	}
+
+}

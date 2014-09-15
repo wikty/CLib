@@ -39,6 +39,13 @@ extern int bm_str_match(const char *str, const char *pattern);
 
 /*
  *	@function
+ *		Name:				Horspool String Match
+ *		Description:		The simplified version of BM
+ */
+extern int hp_str_match(const char *str, const char *pattern);
+
+/*
+ *	@function
  *		Name:				Sunday String Match
  *		Time-Performance:	O(n/m)
  */

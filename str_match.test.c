@@ -57,7 +57,7 @@ int main(){
 	}
 	printf("\n");
 
-	printf("%s\n", "BM String Match");
+	printf("%s\n", "Boyer-Moore String Match");
 	pos = bm_str_match(str1, str2);
 	if(pos != -1){
 		printf("%s\n", str1);
@@ -72,8 +72,23 @@ int main(){
 	}
 	printf("\n");
 
-	printf("%s\n", "SD String Match");
+	printf("%s\n", "Sunday String Match");
 	pos = sd_str_match(str1, str2);
+	if(pos != -1){
+		printf("%s\n", str1);
+		for(int i=0; i<pos; i++){
+			printf("%c", ' ');
+		}
+		printf("%s\n", str2);
+		printf("Matched On %d\n", pos);
+	}
+	else{
+		printf("%s\n", "Not Matched");
+	}
+	printf("\n");
+
+	printf("%s\n", "Horspool String Match");
+	pos = hp_str_match(str1, str2);
 	if(pos != -1){
 		printf("%s\n", str1);
 		for(int i=0; i<pos; i++){
