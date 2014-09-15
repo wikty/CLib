@@ -5,6 +5,9 @@
 #define ASCII_MAX_SIZE 255
 
 static void partial_match_table(const char *str, int table[]);
+static void bm_char_table(const char *str, int table[]);
+static void bm_suffix_table(const char *str, int table[]);
+static void sd_char_table(const char *str, int table[]);
 
 int prefix_str_match(const char *str, const char *pattern){
 	int str_len = 0;
@@ -140,8 +143,8 @@ int bm_str_match(const char *str, const char *pattern){
 		free(bad_table);
 		return -1;
 	}
-	unmatch_char_table(pattern, bad_table);
-	match_suffix_table(pattern, good_table);
+	bm_char_table(pattern, bad_table);
+	bm_suffix_table(pattern, good_table);
 
 	int i, j;
 	i = j = pattern_len - 1;
@@ -156,13 +159,65 @@ int bm_str_match(const char *str, const char *pattern){
 			}
 		}
 		else{
-			i += (bad_table[pattern[j]] > good_table[j+1] ? bad_table[pattern[j]] : good_table[j+1]);
+			int step1 = bad_table[str[i]];
+			int step2;
+			if(j == pattern_len-1){
+				step2 = -1;
+			}
+			else{
+				step2 = good_table[j+1];
+			}
+			i += (step1 > step2 ? step1 : step2);
 			j = pattern_len - 1;
 		}
 	}
 
 	free(bad_table);
 	free(good_table);
+	return -1;
+}
+
+int sd_str_match(const char *str, const char *pattern){
+	int str_len = 0;
+	int pattern_len = 0;
+	const char *p = str;
+	while(*p != '\0'){
+		p++;
+	}
+	/* If str's length is larger than pow(2, 31)-1, will error */
+	str_len = p - str;
+	p = pattern;
+	while(*p != '\0'){
+		p++;
+	}
+	pattern_len = p - pattern;
+
+	int *table = NULL;
+	if((table = (int *)malloc(sizeof(int) * ASCII_MAX_SIZE)) == NULL){
+		return -1;
+	}
+	sd_char_table(pattern, table);
+
+	int i=0, j=0;
+	while(i < str_len){
+		if(str[i] == pattern[j]){
+			i++;
+			j++;
+			if(j==pattern_len){
+				free(table);
+				return i - pattern_len;
+			}
+		}
+		else{
+			if(i+1 > str_len -1){
+				break;
+			}
+			i = (pattern_len - 1) - j + i + 1 + table[str[i+1]];
+			j = 0;
+		}
+	}
+
+	free(table);
 	return -1;
 }
 
@@ -200,7 +255,7 @@ void partial_match_table(const char *str, int table[]){
 	}
 }
 
-void unmatch_char_table(const char *str, int table[]){
+void bm_char_table(const char *str, int table[]){
 	int str_len = 0;
 	const char *p = str;
 	while(*p != '\0'){
@@ -220,7 +275,7 @@ void unmatch_char_table(const char *str, int table[]){
 
 }
 
-void match_suffix_table(const char *str, int table[]){
+void bm_suffix_table(const char *str, int table[]){
 	int str_len = 0;
 	const char *p = str;
 	while(*p != '\0'){
@@ -250,5 +305,25 @@ void match_suffix_table(const char *str, int table[]){
 
 		table[i] = str_len + suffix_len - count;
 	}
+}
+
+void sd_char_table(const char *str, int table[]){
+	int str_len = 0;
+	const char *p = str;
+	while(*p != '\0'){
+		p++;
+	}
+	/* If str's length is larger than pow(2, 31)-1, will error */
+	str_len = p - str;
+
+	int i=0;
+	for(; i<ASCII_MAX_SIZE; i++){
+		table[i] = 1;
+	}
+	/* later element will override */
+	for(i=0; i<str_len; i++){
+		table[str[i]] = -1 * i;
+	}
+
 }
 

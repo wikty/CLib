@@ -31,9 +31,17 @@ extern int kmp_str_match(const char *str, const char *pattern);
 /*
  *	@function
  *		Name:				Boyer-Moore String Match
+ *		Time-Performance:	O(n/(m+1))
  *		Description:		The improved version of suffix match
  */
 
 extern int bm_str_match(const char *str, const char *pattern);
+
+/*
+ *	@function
+ *		Name:				Sunday String Match
+ *		Time-Performance:	O(n/m)
+ */
+extern int sd_str_match(const char *str, const char *pattern);
 
 #endif
