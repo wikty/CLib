@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #include "list.h"
-#include "bucket.h"
+#include "bucket_sort.h"
 
 static void merge(List *lst, List *lst1, int (*compare)(const void *data1, const void *data2));
 
@@ -30,8 +30,7 @@ int bucket_init(Bucket *buk,
 void bucket_destroy(Bucket *buk){
 	for(int i=0; i<buk->size; i++){
 		if(buk->buckets[i] != NULL){
-
-
+			list_destroy(buk->buckets[i]);
 
 			/* free the list */
 			free(buk->buckets[i]);
@@ -51,6 +50,7 @@ int bucket_insert(Bucket *buk, const void *data){
 		if((buk->buckets[index] = (List *)malloc(sizeof(List))) == NULL){
 			return -1;
 		}
+		list_init(buk->buckets[index], buk->destroy, buk->compare);
 	}
 
 	Node *pNode = list_head(buk->buckets[index]);
@@ -83,7 +83,6 @@ int bucket_sort(Bucket *buk, List *lst){
 	return 0;
 }
 
-
 /*
  *	Internal Functions
  */
@@ -94,6 +93,8 @@ void merge(List *lst, List *lst1, int (*compare)(const void *data1, const void *
 	pNode = list_head(lst);
 	pNode1 = list_head(lst1);
 	List temp;
+	list_init(&temp, NULL, NULL);
+	
 	while(pNode != NULL && pNode1 != NULL)	{
 		int cmpval = compare(list_node_data(pNode), list_node_data(pNode1));
 		if(cmpval < 0){
@@ -129,5 +130,6 @@ void merge(List *lst, List *lst1, int (*compare)(const void *data1, const void *
 		list_push(lst, list_node_data(pNode));
 		pNode = list_node_next(pNode);
 	}
+	list_destroy(&temp);
 	return 0;
 }
