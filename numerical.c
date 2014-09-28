@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdlib.h>
 
 int interpol(const double *x,
@@ -57,4 +58,34 @@ void lesq(const double *x,
 	}
 	*k = (n*sum[0]-sum[1]*sum[2])/(n*sum[3]-sum[1]*sum[1]);
 	*b = (sum[2]-(*k)*sum[1])/n;
+}
+
+int getroot(double (*f)(double x),
+			double (*g)(double x),
+			double *x,
+			int *n,
+			double delta){
+	int satisfied, i;
+	i = 0;
+	satisfied = 0;
+	while(!satisfied && i+1<*n){
+		x[i+1] = x[i] - f(x[i])/g(x[i]);
+		if(fabs(x[i+1]-x[i]) < delta){
+			satisfied = 1;
+			break;
+		}
+		i++;
+	}
+	if(i == 0){
+		*n = 1;
+	}
+	else{
+		*n = i + 1;
+	}
+	if(satisfied){
+		return 0;
+	}
+	else{
+		return -1;
+	}
 }

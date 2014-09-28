@@ -20,4 +20,10 @@ extern void lesq(const double *x,
 				double *k,
 				double *b);
 
+extern int getroot(double (*f)(double x),
+					double (*g)(double x),
+					double *x,
+					int *n,
+					double delta);
+
 #endif
