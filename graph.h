@@ -68,8 +68,8 @@ extern int graph_is_adjacent(Graph *gp, const void *vertex1, const void *vertex2
 
 extern void graph_dump(Graph *gp, void (*print)(const void *data));
 
-#define graph_vcount(gp)	((gp)->vcount);
-#define graph_ecount(gp)	((gp)->ecount);
+#define graph_vcount(gp)	((gp)->vcount)
+#define graph_ecount(gp)	((gp)->ecount)
 #define graph_is_empty(gp)	((gp)->vcount == 0 ? 1 : 0)
 
 #endif
